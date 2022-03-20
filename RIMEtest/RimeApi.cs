@@ -7,51 +7,99 @@ using System.Threading.Tasks;
 
 namespace RIMEtest {
     [StructLayout(LayoutKind.Sequential)]
-    public class RimeApix {
+    public struct RimeApi {
         public int data_size;
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern void RimeSetup(RimeTraits traits);
-        public void setup(RimeTraits traits) {
-            RimeSetup(traits);
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeSetup(ref RimeTraits traits);
+        public void setup(ref RimeTraits traits) {
+            RimeSetup(ref traits);
         }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern char RimeGetVersion();
-        [DllImport("NativeLibrary.dll")]
-        private static extern IntPtr CreateWishList(string name);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern void DeleteWishList(IntPtr wishListPointer);
-
-        [DllImport("NativeLibrary.dll")]
-        [return: MarshalAs(UnmanagedType.BStr)]
-        private static extern string GetWishListName(IntPtr wishListPointer);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern void SetWishListName(IntPtr wishListPointer, string name);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern void AddWishListItem(IntPtr wishListPointer, string name);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern void RemoveWishListItem(IntPtr wishListPointer, string name);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern int CountWishListItems(IntPtr wishListPointer);
-
-        [DllImport("NativeLibrary.dll")]
-        private static extern void PrintWishList(IntPtr wishListPointer);
-
-        private readonly IntPtr _wishListPointer;
-
-        public string Name {
-            get {
-                return GetWishListName(_wishListPointer);
-            }
-            set {
-                SetWishListName(_wishListPointer, value);
-            }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        //public static extern void RimeSetNotificationHandler(Action<System.IntPtr, nuint, string, string> handler, System.IntPtr context_object);
+        public static extern void RimeSetNotificationHandler(RimeNotificationHandler handler, System.IntPtr context_object);
+        public void set_notification_handler(RimeNotificationHandler handler, System.IntPtr context_object) {
+            RimeSetNotificationHandler(handler, context_object);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeInitialize(ref RimeTraits traits);
+        public void initialize(ref RimeTraits traits) {
+            RimeInitialize(ref traits);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeStartMaintenance(bool full_check);
+        public bool start_maintenance(bool full_check) {
+            return RimeStartMaintenance(full_check);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeJoinMaintenanceThread();
+        public void join_maintenance_thread() {
+            RimeJoinMaintenanceThread();
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern nuint RimeCreateSession();
+        public nuint create_session() {
+            return RimeCreateSession();
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeSimulateKeySequence(nuint session_id, string key_sequence);
+        public bool simulate_key_sequence(nuint session_id, string key_sequence) {
+            return RimeSimulateKeySequence(session_id, key_sequence);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeGetSchemaList(ref RimeSchemaList schemaList);
+        public bool get_schema_list(ref RimeSchemaList schemaList) {
+            return RimeGetSchemaList(ref schemaList);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeFreeSchemaList(ref RimeSchemaList schemaList);
+        public void free_schema_list(ref RimeSchemaList schema) {
+            RimeFreeSchemaList(ref schema);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeGetCommit(nuint session_id, ref RimeCommit commit);
+        public bool get_commit(nuint session_id, ref RimeCommit commit) {
+            return RimeGetCommit(session_id, ref commit);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeFreeCommit(ref RimeCommit commit);
+        public bool free_commit(ref RimeCommit commit) {
+            return RimeFreeCommit(ref commit);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeGetStatus(nuint session_id, ref RimeStatus status);
+        public bool get_status(nuint session_id, ref RimeStatus status) {
+            return RimeGetStatus(session_id, ref status);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeFreeStatus(ref RimeStatus status);
+        public bool free_status(ref RimeStatus status) {
+            return RimeFreeStatus(ref status);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeGetContext(nuint session_id, ref RimeContext context);
+        public bool get_context(nuint session_id, ref RimeContext context) {
+            return RimeGetContext(session_id, ref context);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeFreeContext(ref RimeContext context);
+        public bool free_context(ref RimeContext context) {
+            return RimeFreeContext(ref context);
         }
 
-
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeSetupLogging(ref string app_name);
+        public void setup_logging(ref string app_name) {
+            RimeSetupLogging(ref app_name);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void RimeFinalize();
+        public void finalize() {
+            RimeFinalize();
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeDestroySession(nuint session_id);
+        public bool destroy_session(nuint session_id) {
+            return RimeDestroySession(session_id);
+        }
     }
 }

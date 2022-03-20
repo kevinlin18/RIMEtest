@@ -7,53 +7,31 @@ using System.Runtime.InteropServices;
 
 namespace RIMEtest {
     class Program {
-        
-
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeSetup(ref RimeTraits traits);
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeSetupLogging(ref string app_name);
-        //[DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        //private static extern void RimeSetNotificationHandler();
-
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeInitialize(ref RimeTraits traits);
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeFinalize();
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool RimeStartMaintenance(bool full_check);
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern bool RimeIsMaintenancing();
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeJoinMaintenanceThread();
-
-
         [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         private static extern RimeApi rime_get_api();
 
-
-
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern char RimeGetVersion();
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern void RimeSetup();
         static void Main(string[] args) {
+            Console.WriteLine("test,測試");
             var rime = rime_get_api();
             var traist = new RimeTraits();
             traist.app_name = "rime.testKK";
             rime.setup(ref traist);
+            //rime.set_notification_handler(on_message, System.IntPtr.Zero);
 
-            rime.initialize(ref traist);
+            var traist_null = new RimeTraits();
+            rime.initialize(ref traist_null);
+
             bool full_check = true;
             if (rime.start_maintenance(full_check)) {
                 rime.join_maintenance_thread();
             }
             Console.WriteLine("ready.");
             nuint session_id = rime.create_session();
-            //if (!session_id) {
-            //    Console.WriteLine("Error creating rime session.");
-            //    return;
-            //}
+            if (session_id == 0) {
+                Console.WriteLine("Error creating rime session.");
+                Console.ReadLine();
+                return;
+            }
 
             //const int kMaxLength = 99;
             //char line[kMaxLength + 1] = { 0 };
@@ -63,9 +41,9 @@ namespace RIMEtest {
                 if (line.Equals("exit")) {
                     break;
                 }
-                //if (execute_special_command(line, session_id)) {
-                //    continue;
-                //}
+                if (execute_special_command(line, session_id)) {
+                    continue;
+                }
                 if (rime.simulate_key_sequence(session_id, line)) {
                     print(session_id);
                 } else {
@@ -74,11 +52,17 @@ namespace RIMEtest {
 
             }
 
+            rime.destroy_session(session_id);
+            rime.finalize();
 
             Console.WriteLine("Last line");
             Console.ReadLine();
         }
+        private static void on_message(System.IntPtr context_object, nuint session_id, string message_type, string message_value) {
+            Console.WriteLine(string.Format( "message: [{0}] [{1}] {2}",session_id, message_type, message_value));
+        }
         private static void print(nuint session_id) {
+            Console.WriteLine("KLog: print");
             var rime = rime_get_api();
             var commit = new RimeCommit();
             var status = new RimeStatus();
@@ -87,17 +71,17 @@ namespace RIMEtest {
             if (rime.get_commit(session_id, ref commit)) {
                 Console.WriteLine("commit: %s", commit.text);
                 rime.free_commit(ref commit);
-            }
+            } else { Console.WriteLine("KLog: fail get_commit"); }
 
             if (rime.get_status(session_id, ref status)) {
                 print_status(ref status);
                 rime.free_status(ref status);
-            }
+            } else { Console.WriteLine("KLog: fail get_status"); }
 
             if (rime.get_context(session_id, ref context)) {
                 print_context(ref context);
                 rime.free_context(ref context);
-            }
+            } else { Console.WriteLine("KLog: fail get_context"); }
 
             return;
         }
@@ -161,22 +145,23 @@ namespace RIMEtest {
         }
         private static bool execute_special_command(string line, nuint session_id) {
             var rime = rime_get_api();
-            //if (line.Equals("print schema list")) {
-            //    var list = new RimeSchemaList();
-            //    if (rime.get_schema_list(ref list)) {
-            //        Console.WriteLine("schema list:");
-            //        for (nuint i = 0; i < list.size; ++i) {
-            //            printf("%lu. %s [%s]\n", (i + 1),
-            //                   list.list[i].name, list.list[i].schema_id);
-            //        }
-            //        rime->free_schema_list(&list);
-            //    }
-            //    char current[100] = { 0 };
-            //    if (rime->get_current_schema(session_id, current, sizeof(current))) {
-            //        printf("current schema: [%s]\n", current);
-            //    }
-            //    return true;
-            //}
+            if (line.Equals("print schema list")) {
+                var list = new RimeSchemaList();
+                    if (rime.get_schema_list(ref list)) {
+                    Console.WriteLine("schema list:");
+                    for (int i = 0; i < (int)list.size; ++i) {
+                        //printf("%lu. %s [%s]\n", (i + 1),
+                        //       list.list[i].name, list.list[i].schema_id);
+                        Console.Write(string.Format("{0}. {1} [{2}]", i + 1, list.list[i].name, list.list[i].schema_id));
+                    }
+                    rime.free_schema_list(ref list);
+                }
+                //    char current[100] = { 0 };
+                //    if (rime->get_current_schema(session_id, current, sizeof(current))) {
+                //        printf("current schema: [%s]\n", current);
+                //    }
+                return true;
+            }
 
             //  const char* kSelectSchemaCommand = "select schema ";
             //size_t command_length = strlen(kSelectSchemaCommand);
@@ -187,6 +172,7 @@ namespace RIMEtest {
             //    }
             //    return true;
             //}
+
             //const char* kSelectCandidateCommand = "select candidate ";
             //command_length = strlen(kSelectCandidateCommand);
             //if (!strncmp(line, kSelectCandidateCommand, command_length)) {
@@ -199,6 +185,7 @@ namespace RIMEtest {
             //    }
             //    return true;
             //}
+
             //if (!strcmp(line, "print candidate list")) {
             //    RimeCandidateListIterator iterator = { 0 };
             //    if (rime->candidate_list_begin(session_id, &iterator)) {
@@ -245,6 +232,15 @@ namespace RIMEtest {
         [MarshalAs(UnmanagedType.LPStr)] public string prebuild_data_dir;
         [MarshalAs(UnmanagedType.LPStr)] public string staging_dir;
     }
+
+    public delegate void RimeNotificationHandler(System.IntPtr context_object, nuint session_id, string message_type, string message_value);
+    //[StructLayout(LayoutKind.Sequential)]
+    //public struct RimeNotificationHandler {
+    //    [MarshalAs(UnmanagedType.LPStr)] public string context_object;
+    //    public nuint session_id;
+    //    [MarshalAs(UnmanagedType.LPStr)] public string message_type;
+    //    [MarshalAs(UnmanagedType.LPStr)] public string message_value;
+    //}
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeComposition {
         public int length;
@@ -314,93 +310,19 @@ namespace RIMEtest {
         [MarshalAs(UnmanagedType.LPStr)] public string key;
         [MarshalAs(UnmanagedType.LPStr)] public string path;
     }
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct RimeSchemaListItem {
         [MarshalAs(UnmanagedType.LPStr)] public string schema_id;
         [MarshalAs(UnmanagedType.LPStr)] public string name;
         //void* reserved;
     }
     [StructLayout(LayoutKind.Sequential)]
+    //[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct RimeSchemaList {
         public nuint size;
-        public RimeSchemaListItem list;
+        [MarshalAs(UnmanagedType.ByValArray, ArraySubType = UnmanagedType.U1)]
+        public RimeSchemaListItem[] list;
     }
     // TODO line 191
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RimeApi {
-        public int data_size;
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RimeSetup(ref RimeTraits traits);
-        public void setup(ref RimeTraits traits) {
-            RimeSetup(ref traits);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RimeInitialize(ref RimeTraits traits);
-        public void initialize(ref RimeTraits traits) {
-            RimeInitialize(ref traits);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeStartMaintenance(bool full_check);
-        public bool start_maintenance(bool full_check) {
-            return RimeStartMaintenance(full_check);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void RimeJoinMaintenanceThread();
-        public void join_maintenance_thread() {
-            RimeJoinMaintenanceThread();
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern nuint RimeCreateSession();
-        public nuint create_session() {
-            return RimeCreateSession();
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeSimulateKeySequence(nuint session_id, string key_sequence);
-        public bool simulate_key_sequence(nuint session_id, string key_sequence) {
-            return RimeSimulateKeySequence(session_id, key_sequence);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeGetSchemaList(ref RimeSchemaList schemaList);
-        public bool get_schema_list(ref RimeSchemaList schemaList) {
-            return RimeGetSchemaList(ref schemaList);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeGetCommit(nuint session_id, ref RimeCommit commit);
-        public bool get_commit(nuint session_id, ref RimeCommit commit) {
-            return RimeGetCommit(session_id, ref commit);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeFreeCommit(ref RimeCommit commit);
-        public bool free_commit(ref RimeCommit commit) {
-            return RimeFreeCommit(ref commit);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeGetStatus(nuint session_id, ref RimeStatus status);
-        public bool get_status(nuint session_id, ref RimeStatus status) {
-            return RimeGetStatus(session_id, ref status);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeFreeStatus(ref RimeStatus status);
-        public bool free_status(ref RimeStatus status) {
-            return RimeFreeStatus(ref status);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeGetContext(nuint session_id, ref RimeContext context);
-        public bool get_context(nuint session_id, ref RimeContext context) {
-            return RimeGetContext(session_id, ref context);
-        }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern bool RimeFreeContext(ref RimeContext context);
-        public bool free_context(ref RimeContext context) {
-            return RimeFreeContext(ref context);
-        }
-
-
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        public static extern char RimeGetVersion();
-        public char get_version() {
-            return RimeGetVersion();
-        }
-    }
 }
