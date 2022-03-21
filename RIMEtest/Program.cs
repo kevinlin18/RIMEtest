@@ -16,7 +16,7 @@ namespace RIMEtest {
             var traist = new RimeTraits();
             traist.app_name = "rime.testKK";
             rime.setup(ref traist);
-            //rime.set_notification_handler(on_message, System.IntPtr.Zero);
+            rime.set_notification_handler(on_message, System.IntPtr.Zero);
 
             var traist_null = new RimeTraits();
             rime.initialize(ref traist_null);
@@ -232,7 +232,7 @@ namespace RIMEtest {
         [MarshalAs(UnmanagedType.LPStr)] public string prebuild_data_dir;
         [MarshalAs(UnmanagedType.LPStr)] public string staging_dir;
     }
-
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void RimeNotificationHandler(System.IntPtr context_object, nuint session_id, string message_type, string message_value);
     //[StructLayout(LayoutKind.Sequential)]
     //public struct RimeNotificationHandler {
