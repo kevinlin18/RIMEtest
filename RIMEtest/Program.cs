@@ -165,15 +165,15 @@ namespace RIMEtest {
                 return true;
             }
 
-            //  const char* kSelectSchemaCommand = "select schema ";
-            //size_t command_length = strlen(kSelectSchemaCommand);
-            //if (!strncmp(line, kSelectSchemaCommand, command_length)) {
-            //    const char* schema_id = line + command_length;
-            //    if (rime->select_schema(session_id, schema_id)) {
-            //        printf("selected schema: [%s]\n", schema_id);
-            //    }
-            //    return true;
-            //}
+            const string kSelectSchemaCommand = "select schema ";
+            int command_length = kSelectSchemaCommand.Length;
+            if (line.Contains(kSelectSchemaCommand) && line.Substring(0, command_length).Equals(kSelectSchemaCommand)) {
+                string schema_id = line.Replace(kSelectSchemaCommand, "");
+                if (rime.select_schema(session_id, schema_id)) {
+                    Console.WriteLine(string.Format("selected schema: [{0}]", schema_id));
+                }
+                return true;
+            }
 
             //const char* kSelectCandidateCommand = "select candidate ";
             //command_length = strlen(kSelectCandidateCommand);

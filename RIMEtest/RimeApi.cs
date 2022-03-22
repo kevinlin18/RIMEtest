@@ -71,6 +71,11 @@ namespace RIMEtest {
             return RimeFreeCommit(ref commit);
         }
         [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeSelectSchema(nuint session_id, string schema_id);
+        public bool select_schema(nuint session_id, string schema_id) {
+            return RimeSelectSchema(session_id, schema_id);
+        }
+        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RimeGetStatus(nuint session_id, ref RimeStatus status);
         public bool get_status(nuint session_id, ref RimeStatus status) {
             return RimeGetStatus(session_id, ref status);
