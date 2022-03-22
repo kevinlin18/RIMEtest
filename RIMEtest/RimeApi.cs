@@ -40,7 +40,7 @@ namespace RIMEtest {
         public nuint create_session() {
             return RimeCreateSession();
         }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("rime.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RimeSimulateKeySequence(nuint session_id, string key_sequence);
         public bool simulate_key_sequence(nuint session_id, string key_sequence) {
             return RimeSimulateKeySequence(session_id, key_sequence);
