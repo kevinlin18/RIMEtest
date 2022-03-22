@@ -147,19 +147,21 @@ namespace RIMEtest {
             var rime = rime_get_api();
             if (line.Equals("print schema list")) {
                 var list = new RimeSchemaList();
-                    if (rime.get_schema_list(ref list)) {
+                if (rime.get_schema_list(ref list)) {
                     Console.WriteLine("schema list:");
+                    var itemSize = Marshal.SizeOf(typeof(RimeSchemaListItem));
+                    var items = new RimeSchemaListItem[list.size];
                     for (int i = 0; i < (int)list.size; ++i) {
-                        //printf("%lu. %s [%s]\n", (i + 1),
-                        //       list.list[i].name, list.list[i].schema_id);
-                        Console.Write(string.Format("{0}. {1} [{2}]", i + 1, list.list[i].name, list.list[i].schema_id));
+                        IntPtr ins = new IntPtr(list.list.ToInt64() + i * itemSize);
+                        items[i] = Marshal.PtrToStructure<RimeSchemaListItem>(ins);
+                        Console.WriteLine(string.Format("{0}. {1} [{2}]", i + 1, items[i].name, items[i].schema_id));
                     }
                     rime.free_schema_list(ref list);
                 }
-                //    char current[100] = { 0 };
-                //    if (rime->get_current_schema(session_id, current, sizeof(current))) {
-                //        printf("current schema: [%s]\n", current);
-                //    }
+                char[] current = new char[100];
+                if (rime.get_current_schema(session_id, ref current, current.Length)) {
+                    Console.WriteLine(string.Format("current schema: {0}", new string(current)));
+                }
                 return true;
             }
 
@@ -253,7 +255,7 @@ namespace RIMEtest {
     public struct RimeCandidate {
         [MarshalAs(UnmanagedType.LPStr)] public string text;
         [MarshalAs(UnmanagedType.LPStr)] public string comment;
-        //void* reserved;
+        public IntPtr reserved;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeMenu {
@@ -293,19 +295,19 @@ namespace RIMEtest {
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeCandidateListIterator {
-        //void* ptr;
+        public IntPtr ptr;
         public int index;
         public RimeCandidate candidate;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeConfig {
-        //void* ptr;
+        public IntPtr ptr;
     }
 
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeConfigIterator {
-        //void* list;
-        //void* map;
+        public IntPtr list;
+        public IntPtr map;
         public int index;
         [MarshalAs(UnmanagedType.LPStr)] public string key;
         [MarshalAs(UnmanagedType.LPStr)] public string path;
@@ -314,14 +316,12 @@ namespace RIMEtest {
     public struct RimeSchemaListItem {
         [MarshalAs(UnmanagedType.LPStr)] public string schema_id;
         [MarshalAs(UnmanagedType.LPStr)] public string name;
-        //void* reserved;
+        public IntPtr reserved;
     }
     [StructLayout(LayoutKind.Sequential)]
-    //[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct RimeSchemaList {
         public nuint size;
-        [MarshalAs(UnmanagedType.ByValArray, ArraySubType = UnmanagedType.U1)]
-        public RimeSchemaListItem[] list;
+        public IntPtr list;
     }
     // TODO line 191
 

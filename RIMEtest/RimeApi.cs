@@ -45,7 +45,7 @@ namespace RIMEtest {
         public bool simulate_key_sequence(nuint session_id, string key_sequence) {
             return RimeSimulateKeySequence(session_id, key_sequence);
         }
-        [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("rime.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RimeGetSchemaList(ref RimeSchemaList schemaList);
         public bool get_schema_list(ref RimeSchemaList schemaList) {
             return RimeGetSchemaList(ref schemaList);
@@ -59,6 +59,11 @@ namespace RIMEtest {
         public static extern bool RimeGetCommit(nuint session_id, ref RimeCommit commit);
         public bool get_commit(nuint session_id, ref RimeCommit commit) {
             return RimeGetCommit(session_id, ref commit);
+        }
+        [DllImport("rime.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeGetCurrentSchema(nuint session_id, [Out, MarshalAs(UnmanagedType.LPArray, SizeConst = 100)] char[] schema_id, int buffer_size);
+        public bool get_current_schema(nuint session_id, ref char[] schema_id, int buffer_size) {
+            return RimeGetCurrentSchema(session_id, schema_id, buffer_size);
         }
         [DllImport("rime.dll", CharSet = CharSet.Unicode, SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool RimeFreeCommit(ref RimeCommit commit);
