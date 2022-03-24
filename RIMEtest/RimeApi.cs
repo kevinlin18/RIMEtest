@@ -131,5 +131,10 @@ namespace RIMEtest {
         public bool destroy_session(nuint session_id) {
             return RimeDestroySession(session_id);
         }
+        [DllImport("rime.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
+        public static extern bool RimeSetOption(nuint session_id, string option, bool value);
+        public bool set_option(nuint session_id, string option, bool value) {
+            return RimeSetOption(session_id, option, value);
+        }
     }
 }
