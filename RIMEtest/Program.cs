@@ -62,32 +62,33 @@ namespace RIMEtest {
             Console.WriteLine(string.Format( "message: [{0}] [{1}] {2}",session_id, message_type, message_value));
         }
         private static void print(nuint session_id) {
-            Console.WriteLine("KLog: print");
             var rime = rime_get_api();
             var commit = new RimeCommit();
             var status = new RimeStatus();
             var context = new RimeContext();
+            commit.data_size = Marshal.SizeOf(typeof(RimeCommit));
+            status.data_size = Marshal.SizeOf(typeof(RimeStatus));
+            context.data_size = Marshal.SizeOf(typeof(RimeContext));
 
             if (rime.get_commit(session_id, ref commit)) {
-                Console.WriteLine("commit: %s", commit.text);
-                rime.free_commit(ref commit);
-            } else { Console.WriteLine("KLog: fail get_commit"); }
+                Console.WriteLine($"commit: {commit.text}");
+                //rime.free_commit(ref commit);
+            }
 
             if (rime.get_status(session_id, ref status)) {
                 print_status(ref status);
-                rime.free_status(ref status);
-            } else { Console.WriteLine("KLog: fail get_status"); }
+                //rime.free_status(ref status);
+            }
 
             if (rime.get_context(session_id, ref context)) {
                 print_context(ref context);
-                rime.free_context(ref context);
-            } else { Console.WriteLine("KLog: fail get_context"); }
+                //rime.free_context(ref context);
+            }
 
             return;
         }
         private static void print_status(ref RimeStatus status) {
-            Console.WriteLine("schema: %s / %s",
-                   status.schema_id, status.schema_name);
+            Console.WriteLine($"schema: {status.schema_id} / {status.schema_name}");
             Console.Write("status: ");
             if (status.is_disabled) Console.Write("disabled ");
             if (status.is_composing) Console.Write("composing ");
@@ -129,18 +130,22 @@ namespace RIMEtest {
         }
         private static void print_menu(ref RimeMenu menu) {
             if (menu.num_candidates == 0) return;
-            Console.WriteLine("page: %d%c (of size %d)",
+            Console.WriteLine(string.Format("page: {0}{1} (of size {2})",
                    menu.page_no + 1,
                    menu.is_last_page ? '$' : ' ',
-                   menu.page_size);
+                   menu.page_size));
+            var itemSize = Marshal.SizeOf(typeof(RimeCandidate));
+            var items = new RimeCandidate[menu.num_candidates];
             for (int i = 0; i < menu.num_candidates; ++i) {
                 bool highlighted = i == menu.highlighted_candidate_index;
-                Console.WriteLine("%d. %c%s%c%s",
+                IntPtr ins = new IntPtr(menu.candidates.ToInt64() + i * itemSize);
+                items[i] = Marshal.PtrToStructure<RimeCandidate>(ins);
+                Console.WriteLine(string.Format("{0}. {1}{2}{3}{4}",
                        i + 1,
                        highlighted ? '[' : ' ',
-                       menu.candidates[i].text,
+                       items[i].text,
                        highlighted ? ']' : ' ',
-                       !string.IsNullOrEmpty(menu.candidates[i].comment) ? menu.candidates[i].comment : "");
+                       !string.IsNullOrEmpty(items[i].comment) ? items[i].comment : ""));
             }
         }
         private static bool execute_special_command(string line, nuint session_id) {
@@ -175,34 +180,34 @@ namespace RIMEtest {
                 return true;
             }
 
-            //const char* kSelectCandidateCommand = "select candidate ";
-            //command_length = strlen(kSelectCandidateCommand);
-            //if (!strncmp(line, kSelectCandidateCommand, command_length)) {
-            //    int index = atoi(line + command_length);
-            //    if (index > 0 &&
-            //        rime->select_candidate_on_current_page(session_id, index - 1)) {
-            //        print(session_id);
-            //    } else {
-            //        fprintf(stderr, "cannot select candidate at index %d.\n", index);
-            //    }
-            //    return true;
-            //}
-
-            //if (!strcmp(line, "print candidate list")) {
-            //    RimeCandidateListIterator iterator = { 0 };
-            //    if (rime->candidate_list_begin(session_id, &iterator)) {
-            //        while (rime->candidate_list_next(&iterator)) {
-            //            printf("%d. %s", iterator.index + 1, iterator.candidate.text);
-            //            if (iterator.candidate.comment)
-            //                printf(" (%s)", iterator.candidate.comment);
-            //            putchar('\n');
-            //        }
-            //        rime->candidate_list_end(&iterator);
-            //    } else {
-            //        printf("no candidates.\n");
-            //    }
-            //    return true;
-            //}
+            const string kSelectCandidateCommand = "select candidate ";
+            command_length = kSelectCandidateCommand.Length;
+            if (line.Contains(kSelectCandidateCommand) && line.Substring(0, command_length).Equals(kSelectCandidateCommand)) {
+                line = line.Replace(kSelectCandidateCommand, "");
+                int index = int.Parse(line) + command_length;
+                if (index > 0 && rime.select_candidate_on_current_page(session_id, index -1)) {
+                    Console.WriteLine(session_id);
+                } else {
+                    Console.WriteLine(string.Format("cannot select candidate at index {0}.", index));
+                }
+                return true;
+            }
+            if (line.Contains("print candidate list")) {
+                var iterator = new RimeCandidateListIterator();
+                if (rime.candidate_list_begin(session_id, ref iterator)) {
+                    while (rime.candidate_list_next(ref iterator)) {
+                        Console.Write(string.Format("{0}. {1}", iterator.index + 1, iterator.candidate.text));
+                        if (!string.IsNullOrWhiteSpace(iterator.candidate.comment)) {
+                            Console.Write($" ({iterator.candidate.comment})");
+                        }
+                        Console.WriteLine("");
+                    }
+                    rime.candidate_list_end(ref iterator);
+                } else {
+                    Console.WriteLine("no candidates.");
+                }
+                return true;
+            }
             //const char* kSetOptionCommand = "set option ";
             //command_length = strlen(kSetOptionCommand);
             //if (!strncmp(line, kSetOptionCommand, command_length)) {
@@ -217,7 +222,7 @@ namespace RIMEtest {
             //    return true;
             //}
             return false;
-}
+        }
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeTraits {
@@ -264,7 +269,7 @@ namespace RIMEtest {
         public bool is_last_page;
         public int highlighted_candidate_index;
         public int num_candidates;
-        public RimeCandidate[] candidates;
+        public IntPtr candidates;
         [MarshalAs(UnmanagedType.LPStr)] public string select_keys;
     }
     [StructLayout(LayoutKind.Sequential)]
@@ -279,6 +284,7 @@ namespace RIMEtest {
         public RimeMenu menu;
         [MarshalAs(UnmanagedType.LPStr)] public string commit_text_preview;
         //char** select_labels;
+        public IntPtr select_labels;
     }
     [StructLayout(LayoutKind.Sequential)]
     public struct RimeStatus {
