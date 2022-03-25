@@ -66,9 +66,9 @@ namespace RIMEtest {
             var commit = new RimeCommit();
             var status = new RimeStatus();
             var context = new RimeContext();
-            commit.data_size = Marshal.SizeOf(typeof(RimeCommit));
-            status.data_size = Marshal.SizeOf(typeof(RimeStatus));
-            context.data_size = Marshal.SizeOf(typeof(RimeContext));
+            RIME_STRUCT(ref commit);
+            RIME_STRUCT(ref status);
+            RIME_STRUCT(ref context);
 
             if (rime.get_commit(session_id, ref commit)) {
                 Console.WriteLine($"commit: {commit.text}");
@@ -226,6 +226,17 @@ namespace RIMEtest {
                 return true;
             }
             return false;
+        }
+        private static void RIME_STRUCT<T>(ref T value) {
+            dynamic temp = value;
+            temp.data_size = 0;
+            value = temp;
+            RIME_STRUCT_INIT(ref value);
+        }
+        private static void RIME_STRUCT_INIT<T>(ref T value) {
+            dynamic temp = value;
+            temp.data_size = Marshal.SizeOf(typeof(T));
+            value = temp;
         }
     }
     [StructLayout(LayoutKind.Sequential)]
